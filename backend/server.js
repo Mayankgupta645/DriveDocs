@@ -26,6 +26,8 @@ const { checkAndSendReminders } = require("./services/reminderChecker");
 app.use("/api/user", userRouter);
 app.use("/api/documents", documentRouter);
 
+
+
 // Schedule reminder checks - runs every day at 8 AM
 cron.schedule("0 8 * * *", () => {
     console.log("⏰ Running scheduled reminder check...");
@@ -43,6 +45,9 @@ app.get("/api/health", (req, res) => {
     res.status(200).json({ message: "Server is running" });
 });
 
+app.get("/",(req,res)=>{
+    res.send("Backend is Running,  Welcomme to DriveDocs API");
+})
 // Start Server
 app.listen(5000, () => {
     console.log(" Server is running on port 5000");
