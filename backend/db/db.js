@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
-const Url = "mongodb://127.0.0.1:27017/DriveDocs_userdatabase";
+const dotenv = require("dotenv");
+dotenv.config();
+const Url = process.env.DB_NAME;
 mongoose.connect(Url);
     mongoose.connection.on("connected",()=>{
         console.log("MongoDB connected successfully");
