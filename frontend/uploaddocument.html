@@ -7,6 +7,16 @@
     <link rel="stylesheet" href="drivedocs.css">
 </head>
 <body>
+    <script>
+        // Check authentication before loading protected page
+        function checkAuth() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                window.location.href = './register.html';
+            }
+        }
+        checkAuth();
+    </script>
     <div class="nav">
         <h1>DriveDocs</h1>
         <div class="nav-actions">
