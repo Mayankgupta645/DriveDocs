@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drivedoc-Dashboard</title>
+    <link rel="stylesheet" href="drivedocs.css">
+</head>
+<body>
+    <div class="nav">
+        <h1>DriveDocs</h1>
+        <button class="primary-btn" onclick="window.location.href='./home.html'">Home</button>
+        <button class="primary-btn" onclick="window.location.href='./storage.html'">All Documents</button>
+        <button class="primary-btn" onclick="window.location.href='./uploaddocument.html'">+ Upload Document</button>
+    </div>
+    <div class="page-header">
+        <h2>Dashboard Overview</h2>
+        <p>Track your fleet compliance, document status, and upcoming expirations in one place.</p>
+    </div>
+    <div class="hero">
+        <div class="upper">
+            <div class="stat-card">
+                <h3>Total Vehicles</h3>
+                <p id="total-vehicles" class="stat-number">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Documents</h3>
+                <p id="total-documents" class="stat-number">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Expiring Soon</h3>
+                <p id="expiring-soon" class="stat-number">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Expired</h3>
+                <p id="expired-count" class="stat-number">0</p>
+            </div>
+        </div>
+        <div class="middle">
+            <h2>Uploaded Documents</h2>
+            <div id="documents-container" class="documents-display">
+                <p>No documents uploaded yet. <a href="./uploaddocument.html">Upload your first document</a></p>
+            </div>
+        </div>
+        <div class="lower">
+            <h2>Upcoming Expirations</h2>
+            <div id="upcoming-expirations" class="upcoming-list">
+                <p>No upcoming expirations yet. Upload documents to start tracking alerts.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'driveDocsDocuments';
+
+        function getStoredDocuments() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function getExpiryStatus(expiryDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const expiry = new Date(expiryDate);
+            expiry.setHours(0, 0, 0, 0);
+            
+            const diffTime = expiry - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                return { status: 'expired', daysLeft: 0, label: 'Expired' };
+            } else if (diffDays === 0) {
+                return { status: 'today', daysLeft: 0, label: 'Expires Today' };
+            } else if (diffDays <= 30) {
+                return { status: 'expiring-soon', daysLeft: diffDays, label: `${diffDays} days left` };
+            } else {
+                return { status: 'valid', daysLeft: diffDays, label: 'Valid' };
+            }
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'expired': return 'status-expired';
+                case 'today': return 'status-today';
+                case 'expiring-soon': return 'status-expiring-soon';
+                case 'valid': return 'status-valid';
+                default: return '';
+            }
+        }
+
+        function updateDashboard() {
+            const documents = getStoredDocuments();
+
+            // Update statistics
+            const vehicles = new Set(documents.map(doc => doc.vehicleNumber.toUpperCase().trim()));
+            document.getElementById('total-vehicles').textContent = vehicles.size;
+            document.getElementById('total-documents').textContent = documents.length;
+
+            // Count expiring soon and expired
+            let expiringSoon = 0;
+            let expired = 0;
+            documents.forEach(doc => {
+                const status = getExpiryStatus(doc.expiryDate);
+                if (status.status === 'expired') expired++;
+                else if (status.status === 'expiring-soon' || status.status === 'today') expiringSoon++;
+            });
+
+            document.getElementById('expiring-soon').textContent = expiringSoon;
+            document.getElementById('expired-count').textContent = expired;
+
+            // Display all documents grouped by vehicle
+            const container = document.getElementById('documents-container');
+            if (documents.length === 0) {
+                container.innerHTML = '<p>No documents uploaded yet. <a href="./uploaddocument.html">Upload your first document</a></p>';
+            } else {
+                const grouped = documents.reduce((acc, doc) => {
+                    const key = doc.vehicleNumber.toUpperCase().trim();
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(doc);
+                    return acc;
+                }, {});
+
+                container.innerHTML = Object.entries(grouped).map(([vehicleNumber, docs]) => {
+                    return `
+                        <div class="vehicle-section">
+                            <h3>🚗 Vehicle: ${vehicleNumber}</h3>
+                            <div class="documents-grid">
+                                ${docs.map(doc => {
+                                    const status = getExpiryStatus(doc.expiryDate);
+                                    const statusClass = getStatusClass(status.status);
+                                    return `
+                                        <div class="document-card ${statusClass}">
+                                            <div class="doc-header">
+                                                <span class="doc-type">${doc.documentType.toUpperCase()}</span>
+                                                <span class="doc-status">${status.label}</span>
+                                            </div>
+                                            <div class="doc-details">
+                                                <p><strong>File:</strong> ${doc.fileName}</p>
+                                                <p><strong>Expiry Date:</strong> ${formatDate(doc.expiryDate)}</p>
+                                                <p><strong>Uploaded:</strong> ${formatDate(doc.uploadedAt)}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Display upcoming expirations (within 30 days)
+            const upcomingContainer = document.getElementById('upcoming-expirations');
+            const upcomingDocs = documents
+                .map(doc => ({
+                    ...doc,
+                    status: getExpiryStatus(doc.expiryDate)
+                }))
+                .filter(doc => doc.status.status === 'expiring-soon' || doc.status.status === 'today' || doc.status.status === 'expired')
+                .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+
+            if (upcomingDocs.length === 0) {
+                upcomingContainer.innerHTML = '<p>No upcoming expirations. All documents are valid for more than 30 days.</p>';
+            } else {
+                upcomingContainer.innerHTML = `
+                    <table class="expiration-table">
+                        <thead>
+                            <tr>
+                                <th>Vehicle No.</th>
+                                <th>Document Type</th>
+                                <th>Expiry Date</th>
+                                <th>Status</th>
+                                <th>Time Left</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${upcomingDocs.map(doc => `
+                                <tr class="${getStatusClass(doc.status.status)}">
+                                    <td>${doc.vehicleNumber.toUpperCase()}</td>
+                                    <td>${doc.documentType.replace(/_/g, ' ')}</td>
+                                    <td>${formatDate(doc.expiryDate)}</td>
+                                    <td><span class="status-badge">${doc.status.label}</span></td>
+                                    <td>${doc.status.status === 'expired' ? 'EXPIRED' : doc.status.daysLeft + ' days'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+
+        // Update dashboard on page load
+        updateDashboard();
+
+        // Refresh dashboard every minute to update "time left" values
+        setInterval(updateDashboard, 60000);
+    </script>
+</body>
+</html>
