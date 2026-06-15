@@ -5,6 +5,8 @@ const bodyParser = require("body-parser");
 const cron = require("node-cron");
 require("dotenv").config();
 
+console.log("Mongo URI loaded:", !!process.env.MONGODB_URI);
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -43,7 +45,7 @@ app.get("/api/health", (req, res) => {
 
 // Start Server
 app.listen(5000, () => {
-    console.log("✅ Server is running on port 5000");
-    console.log("📅 Scheduled reminder checker is active");
+    console.log(" Server is running on port 5000");
+    console.log(" Scheduled reminder checker is active");
 });
 
