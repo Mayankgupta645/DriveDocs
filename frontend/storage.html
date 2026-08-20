@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>DriveDocs | All documents</title>
+    <link rel="stylesheet" href="drivedocs.css">
+</head>
+<body>
+    <script>
+        // Check authentication before loading protected page
+        function checkAuth() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                window.location.href = './register.html';
+            }
+            if (localStorage.getItem('accessAllowed') === 'false') {
+                alert('Your free demo has ended. Choose a paid plan to continue.');
+                window.location.href = './index.html';
+            }
+        }
+        checkAuth();
+    </script>
+    <div class="nav">
+        <h1>DriveDocs</h1>
+        <div class="nav-actions">
+            <h3><a href="./dashboard.html">Dashboard</a></h3>
+            <h3><a href="./profile.html">Profile</a></h3>
+            <h3><a href="./uploaddocument.html">Upload Document</a></h3>
+        </div>
+    </div>
+    <div class="page-header">
+        <h2>All Stored Documents</h2>
+        <p>Documents uploaded through the platform appear here. Click View to open files or remove outdated entries.</p>
+    </div>
+    <div id="storage-list" class="storage-list"></div>
+
+    <script>
+        const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+            ? 'http://localhost:5000'
+            : 'https://drivedocs-backend.onrender.com';
+        const storageList = document.getElementById('storage-list');
+
+        async function getStoredDocuments() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return [];
+            const response = await fetch(`${API_BASE}/api/documents/user/${userId}`);
+            if (!response.ok) throw new Error('Could not load documents');
+            const data = await response.json();
+            return data.documents || [];
+        }
+
+        function formatDate(isoString) {
+            return new Date(isoString).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getFileUrl(doc) {
+            if (!doc._id || !doc.filePath) return null;
+            return `${API_BASE}/api/documents/${encodeURIComponent(doc._id)}/file`;
+        }
+
+        async function renderDocuments() {
+            let documents;
+            try {
+                documents = await getStoredDocuments();
+            } catch (error) {
+                storageList.innerHTML = `<div class="empty-state"><p>${error.message}</p></div>`;
+                return;
+            }
+
+            if (!documents.length) {
+                storageList.innerHTML = '<div class="empty-state"><p>No documents have been uploaded yet.</p><a class="button-link" href="./uploaddocument.html">Upload your first document</a></div>';
+                return;
+            }
+
+            const grouped = documents.reduce((acc, doc) => {
+                const key = doc.vehicleNumber.toUpperCase().trim();
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(doc);
+                return acc;
+            }, {});
+
+            storageList.innerHTML = Object.entries(grouped).map(([vehicleNumber, docs]) => {
+                return `
+                    <div class="storage-card">
+                        <div class="storage-meta">
+                            <h3>Vehicle ${vehicleNumber}</h3>
+                            <p><strong>Documents:</strong> ${docs.length}</p>
+                            <p><strong>Latest upload:</strong> ${formatDate(docs[0].uploadedAt)}</p>
+                            <div class="storage-docs">
+                                ${docs.map(doc => {
+                                    const fileUrl = getFileUrl(doc);
+                                    const viewButton = fileUrl ? `<a class="btn btn-primary" href="${fileUrl}" target="_blank" rel="noopener">View</a>` : '<span class="badge">File unavailable</span>';
+                                    return `
+                                        <div class="storage-doc">
+                                            <div>
+                                                <p class="doc-title">${doc.fileName}</p>
+                                                <p><strong>Type:</strong> ${doc.documentType.replace(/_/g, ' ')}</p>
+                                                <p><strong>Expiry:</strong> ${doc.expiryDate}</p>
+                                                <p><strong>Uploaded:</strong> ${formatDate(doc.uploadedAt)}</p>
+                                            </div>
+                                            <div class="doc-actions">
+                                                ${viewButton}
+                                                <button class="btn btn-secondary" data-id="${doc._id}">Delete</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            storageList.querySelectorAll('.btn-secondary').forEach(button => {
+                button.addEventListener('click', () => {
+                    const id = button.getAttribute('data-id');
+                    fetch(`${API_BASE}/api/documents/${id}`, { method: 'DELETE' })
+                        .then(() => renderDocuments())
+                        .catch(error => alert('Delete failed: ' + error.message));
+                });
+            });
+        }
+
+        renderDocuments();
+    </script>
+</body>
+</html>

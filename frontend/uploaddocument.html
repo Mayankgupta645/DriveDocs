@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>DriveDocs | Upload Document</title>
+    <link rel="stylesheet" href="drivedocs.css">
+</head>
+<body>
+    <script>
+        // Check authentication before loading protected page
+        function checkAuth() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                window.location.href = './register.html';
+            }
+            if (localStorage.getItem('accessAllowed') === 'false') {
+                alert('Your free demo has ended. Choose a paid plan to continue.');
+                window.location.href = './index.html';
+            }
+        }
+        checkAuth();
+    </script>
+    <div class="nav">
+        <h1>DriveDocs</h1>
+        <div class="nav-actions">
+            <h3><a href="./dashboard.html">Dashboard</a></h3>
+            <h3><a href="./storage.html">All Documents</a></h3>
+        </div>
+    </div>
+    <div class="page-header">
+        <h2>Upload Vehicle Document</h2>
+        <p>Keep your fleet compliant by uploading and managing your vehicle documents in one secure place.</p>
+    </div>
+    <div class="upload-form">
+        <form id="document-upload-form" enctype="multipart/form-data">
+            <label for="vehicle-number">Vehicle Number:</label>
+            <input type="text" id="vehicle-number" name="vehicle_number" required>
+
+            <label for="document-type">Document Type:</label>
+            <select id="document-type" name="document_type" required>
+                <option value="">Select Document Type</option>
+                <option value="rc">Registration Certificate (RC)</option>
+                <option value="insurance">Insurance</option>
+                <option value="puc">Pollution Under Control (PUC)</option>
+                <option value="permit">Permit</option>
+                <option value="driver_license">Driver License</option>
+            </select>
+
+            <label for="expiry-date">Expiry Date:</label>
+            <input type="date" id="expiry-date" name="expiry_date" required>
+
+            <label for="document-file">Upload Document:</label>
+            <input type="file" id="document-file" name="document_file" accept=".pdf,.jpg,.jpeg,.png" required>
+
+            <button type="submit">Upload Document</button>
+        </form>
+    </div>
+
+    <script>
+        const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+            ? 'http://localhost:5000'
+            : 'https://drivedocs-backend.onrender.com';
+        const form = document.getElementById('document-upload-form');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const vehicleNumber = document.getElementById('vehicle-number').value.trim();
+            const documentType = document.getElementById('document-type').value;
+            const expiryDate = document.getElementById('expiry-date').value;
+            const fileInput = document.getElementById('document-file');
+            const file = fileInput.files[0];
+            const userId = localStorage.getItem('userId');
+
+            if (!vehicleNumber || !documentType || !expiryDate || !file) {
+                alert('Please complete every field and select a PDF, JPG, JPEG, or PNG file.');
+                return;
+            }
+
+            if (!userId || userId === 'undefined' || userId === 'null') {
+                alert('Your login session is missing. Please log in again, then upload the document.');
+                window.location.href = './login.html';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('userId', userId);
+            formData.append('vehicleNumber', vehicleNumber);
+            formData.append('documentType', documentType);
+            formData.append('expiryDate', expiryDate);
+            formData.append('document_file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/documents/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    if (data.code === 'VEHICLE_LIMIT_REACHED') {
+                        alert(`${data.message}\n\nChoose a paid plan to continue.`);
+                        window.location.href = './index.html#plans';
+                        return;
+                    }
+                    throw new Error(data.message || 'Upload failed');
+                }
+                window.location.href = './storage.html';
+            } catch (error) {
+                const message = error.message.includes('userId')
+                    ? 'Your login session has expired. Please log in again and try the upload.'
+                    : error.message;
+                alert('Upload failed. ' + message);
+            }
+        });
+    </script>
+</body>
+</html>

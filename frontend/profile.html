@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveDocs Profile</title>
+    <link rel="stylesheet" href="drivedocs.css">
+</head>
+<body>
+    <script>
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) window.location.href = './login.html';
+        if (localStorage.getItem('accessAllowed') === 'false') {
+            alert('Your free demo has ended. Choose a paid plan to continue.');
+            window.location.href = './index.html';
+        }
+    </script>
+
+    <div class="nav">
+        <h1>DriveDocs</h1>
+        <div class="nav-actions">
+            <h3><a href="./dashboard.html">Dashboard</a></h3>
+            <h3><a href="./storage.html">All Documents</a></h3>
+        </div>
+    </div>
+
+    <div class="page-header">
+        <h2>Account Profile</h2>
+        <p>View your account information and current plan.</p>
+    </div>
+
+    <main class="profile-page">
+        <section class="profile-card" id="profile-card">
+            <p>Loading profile...</p>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+            ? 'http://localhost:5000'
+            : 'https://drivedocs-backend.onrender.com';
+        const profileCard = document.getElementById('profile-card');
+
+        function formatDate(value) {
+            return value ? new Date(value).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not applicable';
+        }
+
+        async function loadProfile() {
+            try {
+                const userId = localStorage.getItem('userId');
+                const response = await fetch(`${API_BASE}/api/user/${encodeURIComponent(userId)}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Could not load profile');
+
+                const user = data.user;
+                const planName = user.plan === 'business' ? 'Business' : user.plan === 'starter' ? 'Starter' : 'Free demo';
+                const status = user.subscriptionStatus === 'trial' ? 'Trial active' : user.subscriptionStatus === 'active' ? 'Active' : 'Expired';
+                profileCard.innerHTML = `
+                    <div class="profile-heading">
+                        <div class="profile-avatar">${user.Username.charAt(0).toUpperCase()}</div>
+                        <div><h2>${user.Username}</h2><p>${status}</p></div>
+                    </div>
+                    <div class="profile-details">
+                        <p><strong>Email</strong><span>${user.Email}</span></p>
+                        <p><strong>Phone</strong><span>${user.PhoneNumber}</span></p>
+                        <p><strong>Plan</strong><span>${planName}</span></p>
+                        <p><strong>Vehicle limit</strong><span>${user.vehicleLimit} vehicles</span></p>
+                        <p><strong>Trial ends</strong><span>${formatDate(user.trialEndsAt)}</span></p>
+                        <p><strong>Member since</strong><span>${formatDate(user.createdAt)}</span></p>
+                    </div>
+                `;
+            } catch (error) {
+                profileCard.innerHTML = `<p>${error.message}. Please log in again.</p>`;
+            }
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
