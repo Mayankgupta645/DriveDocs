@@ -38,8 +38,8 @@
             <label for="plan">Choose a plan</label>
             <select id="plan" name="plan">
                 <option value="free">Free demo - 3 days, 1 vehicle</option>
-                <option value="starter">Starter - up to 5 vehicles</option>
-                <option value="business">Business - up to 15 vehicles</option>
+                <option value="starter" disabled>Starter - Coming Soon</option>
+                <option value="business" disabled>Business - Coming Soon</option>
             </select>
 
             <button class="primary-btn" type="submit">Register</button>
@@ -53,8 +53,10 @@
             : 'https://drivedocs-backend.onrender.com';
 
         const requestedPlan = new URLSearchParams(window.location.search).get('plan');
-        if (['free', 'starter', 'business'].includes(requestedPlan)) {
-            document.getElementById('plan').value = requestedPlan;
+        if (requestedPlan === 'free') {
+            document.getElementById('plan').value = 'free';
+        } else {
+            document.getElementById('plan').value = 'free';
         }
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
