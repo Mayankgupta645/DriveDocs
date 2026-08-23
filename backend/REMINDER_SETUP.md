@@ -30,7 +30,7 @@ cp .env.example .env
 Edit `.env` with your actual values:
 
 ```env
-# Gmail Configuration
+# Gmail Configuration for document reminder emails
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-app-password
 

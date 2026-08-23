@@ -11,6 +11,7 @@
         <h1>DriveDocs</h1>
         <div class="nav-actions">
             <h3><a href="./index.html">Home</a></h3>
+            <h3 class="upgrade-link"><a href="./payment.html">Upgrade</a></h3>
             <h3><a href="./login.html">Login</a></h3>
         </div>
     </div>
@@ -38,8 +39,8 @@
             <label for="plan">Choose a plan</label>
             <select id="plan" name="plan">
                 <option value="free">Free demo - 3 days, 1 vehicle</option>
-                <option value="starter" disabled>Starter - Coming Soon</option>
-                <option value="business" disabled>Business - Coming Soon</option>
+                <option value="starter">Starter - ₹499/month, 5 vehicles</option>
+                <option value="business">Business - ₹1499/month, 15 vehicles</option>
             </select>
 
             <button class="primary-btn" type="submit">Register</button>
@@ -53,10 +54,8 @@
             : 'https://drivedocs-backend.onrender.com';
 
         const requestedPlan = new URLSearchParams(window.location.search).get('plan');
-        if (requestedPlan === 'free') {
-            document.getElementById('plan').value = 'free';
-        } else {
-            document.getElementById('plan').value = 'free';
+        if (['free', 'starter', 'business'].includes(requestedPlan)) {
+            document.getElementById('plan').value = requestedPlan;
         }
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -95,8 +94,11 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    
-                    window.location.href = './login.html';
+                    if (plan === 'starter' || plan === 'business') {
+                        window.location.href = `./payment.html?plan=${encodeURIComponent(plan)}&email=${encodeURIComponent(Email)}`;
+                    } else {
+                        window.location.href = './login.html';
+                    }
                 } else {
                     alert('Error: ' + data.message);
                 }

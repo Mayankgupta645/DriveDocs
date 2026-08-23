@@ -20,6 +20,7 @@ const db = require("./db/db");
 // Routes
 const userRouter = require("./router/user");
 const documentRouter = require("./router/documents");
+const paymentRouter = require("./router/payment");
 
 // Services
 const { checkAndSendReminders } = require("./services/reminderChecker");
@@ -27,6 +28,7 @@ const { checkAndSendReminders } = require("./services/reminderChecker");
 // API Routes
 app.use("/api/user", userRouter);
 app.use("/api/documents", documentRouter);
+app.use("/api/payment", paymentRouter);
 
 
 

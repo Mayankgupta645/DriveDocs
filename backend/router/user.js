@@ -31,6 +31,7 @@ router.post('/register',async(req,res)=>{
         });
         console.log('user Created successfully');
     } catch (error) {
+        console.error('Unable to register user:', error);
         res.status(400).json({message: error.message});
     }
 });

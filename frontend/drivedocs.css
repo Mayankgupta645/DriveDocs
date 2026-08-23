@@ -39,6 +39,17 @@ body {
   letter-spacing: .01em;
 }
 .nav h3:hover { background: #1a2bdd; }
+.nav h3.upgrade-link, .nav button.upgrade-link {
+  background: transparent;
+  color: #2B3BFF;
+  border: 1px solid #D0D5FF;
+  padding: .42rem .75rem;
+  font-size: .74rem;
+}
+.nav h3.upgrade-link:hover, .nav button.upgrade-link:hover {
+  background: #F0F2FF;
+  color: #1a2bdd;
+}
 
 .profile-page {
   max-width: 760px;
@@ -83,6 +94,18 @@ body {
 }
 .profile-details p:last-child { border-bottom: 0; }
 .profile-details strong { color: #1A1D2E; }
+.profile-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; }
+.profile-upgrade {
+  border: 1px solid #2B3BFF;
+  background: transparent;
+  color: #2B3BFF;
+  border-radius: 8px;
+  padding: .58rem .9rem;
+  font: 700 .78rem 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.profile-upgrade:hover { background: #2B3BFF; color: #fff; }
 @media (max-width: 520px) {
   .profile-card { padding: 1.25rem; }
   .profile-details p { display: grid; gap: .35rem; }
@@ -274,6 +297,7 @@ body {
 
 /* BUTTONS */
 .started {
+  display: block;
   width: 100%;
   padding: .72rem 1rem;
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -283,6 +307,7 @@ body {
   cursor: pointer;
   transition: .2s;
   margin-top: auto;
+  text-align: center;
 }
 .freeplan .started, .proplan .started {
   background: #F0F2FF;
