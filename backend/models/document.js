@@ -10,6 +10,19 @@ const documentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    vehicleDetails: {
+        make: String,
+        model: String,
+        fuelType: String,
+        registrationDate: Date,
+        insuranceExpiry: Date,
+        pucExpiry: Date
+    },
+    ocrDetails: {
+        vehicleNumber: String,
+        expiryDate: String,
+        extractedAt: Date
+    },
     documentType: {
         type: String,
         enum: ["rc", "insurance", "puc", "permit", "driver_license"],

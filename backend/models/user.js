@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema({
         enum: ["free", "starter", "business"],
         default: "free"
     },
+    pendingPlan: {
+        type: String,
+        enum: ["free", "starter", "business"],
+        default: "free"
+    },
     trialStartedAt: Date,
     trialEndsAt: Date,
     subscriptionStatus: {
@@ -34,7 +39,9 @@ const userSchema = new mongoose.Schema({
     vehicleLimit: {
         type: Number,
         default: 1
-    }
+    },
+    subscriptionStartedAt: Date,
+    razorpayPaymentId: String
     
 },{timestamps:true});
 const User = mongoose.model("User",userSchema);

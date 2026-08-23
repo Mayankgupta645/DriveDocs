@@ -33,7 +33,9 @@ router.post("/upload", upload.single("document_file"), async (req, res) => {
             vehicleNumber,
             documentType,
             expiryDate,
-            notificationPreference
+            notificationPreference,
+            vehicleDetails,
+            ocrDetails
         } = req.body;
 
         const missingFields = [];
@@ -73,12 +75,24 @@ router.post("/upload", upload.single("document_file"), async (req, res) => {
             });
         }
 
+        let parsedVehicleDetails;
+        let parsedOcrDetails;
+        try {
+            parsedVehicleDetails = vehicleDetails ? JSON.parse(vehicleDetails) : undefined;
+            parsedOcrDetails = ocrDetails ? JSON.parse(ocrDetails) : undefined;
+        } catch (error) {
+            fs.unlink(req.file.path, () => {});
+            return res.status(400).json({ message: "Invalid extracted vehicle details." });
+        }
+
         // Create new document
         const document = new Document({
             userId,
             vehicleNumber,
             documentType,
             expiryDate,
+            vehicleDetails: parsedVehicleDetails,
+            ocrDetails: parsedOcrDetails,
             fileName: req.file.originalname,
             fileType: req.file.mimetype,
             filePath: req.file.path,

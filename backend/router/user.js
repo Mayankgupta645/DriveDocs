@@ -13,15 +13,17 @@ router.post('/register',async(req,res)=>{
             password,
             PhoneNumber,
             Email,
-            plan: selectedPlan,
+            plan: "free",
+            pendingPlan: selectedPlan,
             trialStartedAt: undefined,
             trialEndsAt: undefined,
             subscriptionStatus: "active",
-            vehicleLimit: selectedPlan === "business" ? 15 : selectedPlan === "starter" ? 5 : 1
+            vehicleLimit: 1
         });
         await user.save();
         res.status(201).json({
             message: 'User created successfully',
+            userId: user._id,
             plan: selectedPlan,
             trialEndsAt: null
         });
