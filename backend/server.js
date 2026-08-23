@@ -21,7 +21,7 @@ const db = require("./db/db");
 const userRouter = require("./router/user");
 const documentRouter = require("./router/documents");
 const paymentRouter = require("./router/payment");
-const vehicleRouter = require("./router/vehicle");
+const vehicleRouter = require("./router/Vehicle");
 
 // Services
 const { checkAndSendReminders } = require("./services/reminderChecker");
