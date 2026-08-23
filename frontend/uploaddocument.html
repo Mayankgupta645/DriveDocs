@@ -29,10 +29,20 @@
         <h2>Upload Vehicle Document</h2>
         <p>Keep your fleet compliant by uploading and managing your vehicle documents in one secure place.</p>
     </div>
+    <ol class="upload-steps" aria-label="Upload steps">
+        <li><strong>Choose a document</strong><span>Select RC, insurance, PUC, permit, or license.</span></li>
+        <li><strong>Add the vehicle number</strong><span>Enter it manually; lookup is coming soon.</span></li>
+        <li><strong>Check the expiry date</strong><span>OCR suggests a date from JPG or PNG images.</span></li>
+        <li><strong>Review and upload</strong><span>Confirm the details before saving the file.</span></li>
+    </ol>
     <div class="upload-form">
         <form id="document-upload-form" enctype="multipart/form-data">
             <label for="vehicle-number">Vehicle Number:</label>
-            <input type="text" id="vehicle-number" name="vehicle_number" required>
+            <div class="vehicle-lookup-row">
+                <input type="text" id="vehicle-number" name="vehicle_number" required placeholder="e.g. MH12AB1234">
+                <button class="lookup-button" type="button" id="lookupButton" disabled>Coming soon</button>
+            </div>
+            <div class="vehicle-summary" id="vehicleSummary" hidden></div>
 
             <label for="document-type">Document Type:</label>
             <select id="document-type" name="document_type" required>
@@ -49,16 +59,91 @@
 
             <label for="document-file">Upload Document:</label>
             <input type="file" id="document-file" name="document_file" accept=".pdf,.jpg,.jpeg,.png" required>
+            <div class="image-preview" id="imagePreview" hidden>
+                <img id="previewImage" alt="Selected document preview">
+            </div>
+            <p class="ocr-message" id="ocrMessage" role="status" aria-live="polite">Image details are read automatically once after selecting a JPG or PNG. You can edit the fields manually.</p>
 
             <button type="submit">Upload Document</button>
         </form>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
             ? 'http://localhost:5000'
             : 'https://drivedocs-backend.onrender.com';
         const form = document.getElementById('document-upload-form');
+        const fileInput = document.getElementById('document-file');
+        const ocrMessage = document.getElementById('ocrMessage');
+        const lookupButton = document.getElementById('lookupButton');
+        const vehicleSummary = document.getElementById('vehicleSummary');
+        let lookedUpVehicle = null;
+        let ocrDetails = null;
+        const expiryInput = document.getElementById('expiry-date');
+        expiryInput.min = new Date().toISOString().split('T')[0];
+
+        const draftKey = `drivedocs-upload-draft-${localStorage.getItem('userId') || 'guest'}`;
+        const savedDraft = JSON.parse(localStorage.getItem(draftKey) || '{}');
+        if (savedDraft.vehicleNumber) document.getElementById('vehicle-number').value = savedDraft.vehicleNumber;
+        if (savedDraft.expiryDate) document.getElementById('expiry-date').value = savedDraft.expiryDate;
+
+        function saveDraft() {
+            localStorage.setItem(draftKey, JSON.stringify({
+                vehicleNumber: document.getElementById('vehicle-number').value,
+                expiryDate: document.getElementById('expiry-date').value
+            }));
+        }
+        document.getElementById('vehicle-number').addEventListener('input', saveDraft);
+        document.getElementById('expiry-date').addEventListener('input', saveDraft);
+
+        function findVehicleNumber(text) {
+            const compactText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const match = compactText.match(/[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{3,4}/);
+            return match ? match[0] : '';
+        }
+
+        function findExpiryDate(text) {
+            const match = text.match(/\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})\b/);
+            if (!match) return '';
+            const [, first, second, year] = match;
+            const day = Number(first) > 12 ? first : second;
+            const month = Number(first) > 12 ? second : first;
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+
+        fileInput.addEventListener('change', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                ocrMessage.textContent = 'PDF selected. Enter vehicle and expiry details manually.';
+                return;
+            }
+            if (typeof Tesseract === 'undefined') {
+                ocrMessage.textContent = 'Image reading is unavailable right now. Enter the details manually.';
+                return;
+            }
+
+            const previewUrl = URL.createObjectURL(file);
+            document.getElementById('previewImage').src = previewUrl;
+            document.getElementById('imagePreview').hidden = false;
+            ocrMessage.textContent = 'Reading the image. This can take a few seconds...';
+            try {
+                const result = await Tesseract.recognize(file, 'eng');
+                const text = result.data.text;
+                const vehicleNumber = findVehicleNumber(text);
+                const expiryDate = findExpiryDate(text);
+                ocrDetails = { vehicleNumber, expiryDate, extractedAt: new Date().toISOString() };
+                if (vehicleNumber) document.getElementById('vehicle-number').value = vehicleNumber;
+                if (expiryDate) document.getElementById('expiry-date').value = expiryDate;
+                saveDraft();
+                ocrMessage.textContent = vehicleNumber || expiryDate
+                    ? 'Details detected. Check them and correct anything before uploading.'
+                    : 'No vehicle number or expiry date was detected. Please enter them manually.';
+            } catch (error) {
+                ocrMessage.textContent = 'Could not read this image. Please enter the details manually.';
+            }
+        });
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -66,12 +151,24 @@
             const vehicleNumber = document.getElementById('vehicle-number').value.trim();
             const documentType = document.getElementById('document-type').value;
             const expiryDate = document.getElementById('expiry-date').value;
-            const fileInput = document.getElementById('document-file');
             const file = fileInput.files[0];
             const userId = localStorage.getItem('userId');
 
+            const vehiclePattern = /^[A-Za-z]{2}\s*\d{1,2}\s*[A-Za-z]{1,3}\s*\d{3,4}$/;
             if (!vehicleNumber || !documentType || !expiryDate || !file) {
                 alert('Please complete every field and select a PDF, JPG, JPEG, or PNG file.');
+                return;
+            }
+            if (!vehiclePattern.test(vehicleNumber)) {
+                alert('Enter a valid vehicle number, for example MH12AB1234.');
+                return;
+            }
+            if (new Date(`${expiryDate}T00:00:00`) < new Date(new Date().toDateString())) {
+                alert('Expiry date cannot be in the past.');
+                return;
+            }
+            if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+                alert('Choose a PDF, JPG, JPEG, or PNG file smaller than 10 MB.');
                 return;
             }
 
@@ -87,6 +184,8 @@
             formData.append('documentType', documentType);
             formData.append('expiryDate', expiryDate);
             formData.append('document_file', file);
+            if (lookedUpVehicle) formData.append('vehicleDetails', JSON.stringify(lookedUpVehicle));
+            if (ocrDetails) formData.append('ocrDetails', JSON.stringify(ocrDetails));
 
             try {
                 const response = await fetch(`${API_BASE}/api/documents/upload`, {
