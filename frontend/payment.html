@@ -11,7 +11,7 @@
         <h1>DriveDocs</h1>
         <div class="nav-actions">
             <h3><a href="./index.html">Home</a></h3>
-            <h3><a href="./profile.html">Profile</a></h3>
+            
         </div>
     </div>
     <div class="page-header">
@@ -19,11 +19,19 @@
         <p id="paymentDescription">Choose a paid plan to expand your fleet workspace.</p>
     </div>
     <main class="payment-page">
+        <div class="plan-choices" aria-label="Choose a plan">
+            <button class="plan-choice" type="button" data-plan="starter">
+                <strong>Starter</strong><span>₹199/month</span><small>Up to 5 vehicles</small>
+            </button>
+            <button class="plan-choice" type="button" data-plan="business">
+                <strong>Business</strong><span>₹299/month</span><small>Up to 15 vehicles</small>
+            </button>
+        </div>
         <section class="payment-card">
             <p class="payment-label">Selected plan</p>
             <h3 id="planName">Starter</h3>
             <p id="planPrice">₹199/month</p>
-            <button class="primary-btn payment-button" id="payButton" type="button">Pay securely with Razorpay</button>
+            <button class="primary-btn payment-button" id="payButton" type="button">Purchase Starter Plan</button>
             <p class="payment-message" id="paymentMessage" role="status" aria-live="polite"></p>
         </section>
     </main>
@@ -37,24 +45,48 @@
             business: { name: 'Business', amount: 29900, price: '₹299/month' }
         };
         const params = new URLSearchParams(window.location.search);
-        const plan = plans[params.get('plan')] || plans.starter;
+        let selectedPlan = params.get('plan') === 'business' ? 'business' : 'starter';
         const email = params.get('email') || localStorage.getItem('userEmail') || '';
         const message = document.getElementById('paymentMessage');
-        document.getElementById('planName').textContent = plan.name;
-        document.getElementById('planPrice').textContent = plan.price;
+        const button = document.getElementById('payButton');
+        const planChoices = document.querySelectorAll('.plan-choice');
 
-        document.getElementById('payButton').addEventListener('click', async () => {
-            const button = document.getElementById('payButton');
+        function renderPlan() {
+            const plan = plans[selectedPlan];
+            document.getElementById('planName').textContent = plan.name;
+            document.getElementById('planPrice').textContent = plan.price;
+            button.textContent = `Purchase ${plan.name} Plan`;
+            planChoices.forEach(choice => choice.classList.toggle('selected', choice.dataset.plan === selectedPlan));
+        }
+        planChoices.forEach(choice => choice.addEventListener('click', () => {
+            selectedPlan = choice.dataset.plan;
+            renderPlan();
+        }));
+        renderPlan();
+
+        button.addEventListener('click', async () => {
+            if (!localStorage.getItem('userId')) {
+                message.textContent = 'Please log in or register before purchasing a plan.';
+                return;
+            }
+            const plan = plans[selectedPlan];
             button.disabled = true;
             message.textContent = 'Preparing secure checkout...';
             try {
+                if (typeof Razorpay === 'undefined') {
+                    throw new Error('Secure checkout could not load. Check your internet connection and try again.');
+                }
                 const configResponse = await fetch(`${API_BASE}/api/payment/config`);
                 const config = await configResponse.json();
-                if (!configResponse.ok) throw new Error(config.message);
+                if (!configResponse.ok) throw new Error(config.message || 'Razorpay is not configured.');
                 const orderResponse = await fetch(`${API_BASE}/api/payment/create-order`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: plan.amount })
+                    body: JSON.stringify({
+                        amount: plan.amount,
+                        plan: selectedPlan,
+                        userId: localStorage.getItem('userId')
+                    })
                 });
                 const order = await orderResponse.json();
                 if (!orderResponse.ok) throw new Error(order.message);
@@ -67,13 +99,19 @@
                     order_id: order.order_id,
                     prefill: { email },
                     handler: async (response) => {
-                        const verifyResponse = await fetch(`${API_BASE}/api/payment/verify-payment`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(response)
-                        });
-                        const result = await verifyResponse.json();
-                        message.textContent = verifyResponse.ok ? 'Payment verified successfully.' : result.message;
+                        try {
+                            const verifyResponse = await fetch(`${API_BASE}/api/payment/verify-payment`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(response)
+                            });
+                            const result = await verifyResponse.json();
+                            if (!verifyResponse.ok) throw new Error(result.message || 'Payment verification failed.');
+                            message.textContent = 'Payment verified successfully.';
+                            window.location.href = './dashboard.html';
+                        } catch (error) {
+                            message.textContent = error.message || 'Payment verification failed.';
+                        }
                     },
                     modal: { ondismiss: () => { message.textContent = 'Payment cancelled.'; } },
                     theme: { color: '#0f766e' }

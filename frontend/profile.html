@@ -49,8 +49,13 @@
                 if (!response.ok) throw new Error(data.message || 'Could not load profile');
 
                 const user = data.user;
-                const planName = user.plan === 'business' ? 'Business' : user.plan === 'starter' ? 'Starter' : 'Free demo';
-                const status = user.subscriptionStatus === 'trial' ? 'Trial active' : user.subscriptionStatus === 'active' ? 'Active' : 'Expired';
+                const pendingPayment = user.plan === 'free' && ['starter', 'business'].includes(user.pendingPlan);
+                const planName = pendingPayment
+                    ? `${user.pendingPlan === 'business' ? 'Business' : 'Starter'} payment pending`
+                    : user.plan === 'business' ? 'Business' : user.plan === 'starter' ? 'Starter' : 'Free demo';
+                const status = pendingPayment
+                    ? 'Payment pending'
+                    : user.subscriptionStatus === 'trial' ? 'Trial active' : user.subscriptionStatus === 'active' ? 'Active' : 'Expired';
                 profileCard.innerHTML = `
                     <div class="profile-heading">
                         <div class="profile-avatar">${user.Username.charAt(0).toUpperCase()}</div>
@@ -61,7 +66,9 @@
                         <p><strong>Phone</strong><span>${user.PhoneNumber}</span></p>
                         <p><strong>Plan</strong><span>${planName}</span></p>
                         <p><strong>Vehicle limit</strong><span>${user.vehicleLimit} vehicles</span></p>
-                        <p><strong>Plan access</strong><span>${user.plan === 'free' ? 'Lifetime access' : 'Active subscription'}</span></p>
+                        <p><strong>Plan access</strong><span>${pendingPayment ? 'Complete payment to activate' : user.plan === 'free' ? 'Lifetime access' : 'Active subscription'}</span></p>
+                        <p><strong>Subscription started</strong><span>${user.subscriptionStartedAt ? formatDate(user.subscriptionStartedAt) : 'Not purchased'}</span></p>
+                        <p><strong>Payment reference</strong><span>${user.razorpayPaymentId || 'Not available'}</span></p>
                         <p><strong>Member since</strong><span>${formatDate(user.createdAt)}</span></p>
                     </div>
                     <div class="profile-actions">

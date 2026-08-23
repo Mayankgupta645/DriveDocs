@@ -94,6 +94,8 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    localStorage.setItem('userId', data.userId);
+                    localStorage.setItem('userEmail', Email);
                     if (plan === 'starter' || plan === 'business') {
                         window.location.href = `./payment.html?plan=${encodeURIComponent(plan)}&email=${encodeURIComponent(Email)}`;
                     } else {
