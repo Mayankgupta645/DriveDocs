@@ -41,6 +41,7 @@ const userSchema = new mongoose.Schema({
         default: 1
     },
     subscriptionStartedAt: Date,
+    subscriptionExpiresAt: Date,
     razorpayPaymentId: String
     
 },{timestamps:true});
