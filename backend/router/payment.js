@@ -100,12 +100,20 @@ router.post('/verify-payment', (req, res) => {
                 return res.status(400).json({ message: 'Payment order is missing account details.' });
             }
 
+            const currentUser = await User.findById(userId);
+            if (!currentUser) return res.status(404).json({ message: 'User account not found.' });
+            const now = new Date();
+            const renewingSamePlan = currentUser.plan === plan && currentUser.subscriptionExpiresAt > now;
+            const subscriptionStartedAt = renewingSamePlan ? currentUser.subscriptionExpiresAt : now;
+            const subscriptionExpiresAt = new Date(subscriptionStartedAt);
+            subscriptionExpiresAt.setMonth(subscriptionExpiresAt.getMonth() + 1);
             const user = await User.findByIdAndUpdate(userId, {
                 plan,
                 pendingPlan: plan,
                 vehicleLimit,
                 subscriptionStatus: 'active',
-                subscriptionStartedAt: new Date(),
+                subscriptionStartedAt,
+                subscriptionExpiresAt,
                 razorpayPaymentId: razorpay_payment_id
             }, { new: true }).select('-password');
             if (!user) return res.status(404).json({ message: 'User account not found.' });
