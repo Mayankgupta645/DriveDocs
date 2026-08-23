@@ -7,10 +7,6 @@ router.post('/register',async(req,res)=>{
     const selectedPlan = ["free", "starter", "business"].includes(req.body.plan)
         ? req.body.plan
         : "free";
-    const now = new Date();
-    const trialEndsAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    const paidPlan = selectedPlan !== "free";
-
     try {
         const user = new User({
             Username,
@@ -18,16 +14,16 @@ router.post('/register',async(req,res)=>{
             PhoneNumber,
             Email,
             plan: selectedPlan,
-            trialStartedAt: paidPlan ? undefined : now,
-            trialEndsAt: paidPlan ? undefined : trialEndsAt,
-            subscriptionStatus: paidPlan ? "active" : "trial",
+            trialStartedAt: undefined,
+            trialEndsAt: undefined,
+            subscriptionStatus: "active",
             vehicleLimit: selectedPlan === "business" ? 15 : selectedPlan === "starter" ? 5 : 1
         });
         await user.save();
         res.status(201).json({
             message: 'User created successfully',
             plan: selectedPlan,
-            trialEndsAt: paidPlan ? null : trialEndsAt
+            trialEndsAt: null
         });
         console.log('user Created successfully');
     } catch (error) {
@@ -40,26 +36,20 @@ router.post('/login',async(req,res)=>{
     const{Email,password} = req.body;
     const user = await User.findOne({Email,password});
     if(!user) return res.status(400).json({message:"Invalid Email or Password"});
-    if (user.plan === "free" && !user.trialEndsAt) {
-        user.trialStartedAt = new Date();
-        user.trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-        user.subscriptionStatus = "trial";
+    if (user.plan === "free" && (user.trialEndsAt || user.subscriptionStatus !== "active")) {
+        user.trialStartedAt = undefined;
+        user.trialEndsAt = undefined;
+        user.subscriptionStatus = "active";
         await user.save();
     }
-    const trialActive = user.plan === "free" && user.trialEndsAt && user.trialEndsAt > new Date();
-    const accessAllowed = user.plan !== "free" || trialActive;
-    const subscriptionStatus = user.plan === "free"
-        ? (trialActive ? "trial" : "expired")
-        : "active";
-
     res.status(200).json({
         message: "Login Successful",
         userId: user._id,
         plan: user.plan,
         vehicleLimit: user.vehicleLimit,
         trialEndsAt: user.trialEndsAt || null,
-        subscriptionStatus,
-        accessAllowed
+        subscriptionStatus: user.subscriptionStatus || "active",
+        accessAllowed: true
     });
 });
 

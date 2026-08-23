@@ -22,7 +22,7 @@
         <section class="payment-card">
             <p class="payment-label">Selected plan</p>
             <h3 id="planName">Starter</h3>
-            <p id="planPrice">₹499/month</p>
+            <p id="planPrice">₹199/month</p>
             <button class="primary-btn payment-button" id="payButton" type="button">Pay securely with Razorpay</button>
             <p class="payment-message" id="paymentMessage" role="status" aria-live="polite"></p>
         </section>
@@ -33,8 +33,8 @@
             ? 'http://localhost:5000'
             : 'https://drivedocs-backend.onrender.com';
         const plans = {
-            starter: { name: 'Starter', amount: 49900, price: '₹499/month' },
-            business: { name: 'Business', amount: 149900, price: '₹1499/month' }
+            starter: { name: 'Starter', amount: 19900, price: '₹199/month' },
+            business: { name: 'Business', amount: 29900, price: '₹299/month' }
         };
         const params = new URLSearchParams(window.location.search);
         const plan = plans[params.get('plan')] || plans.starter;

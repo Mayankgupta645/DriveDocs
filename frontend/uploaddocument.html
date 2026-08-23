@@ -14,10 +14,6 @@
             if (!authToken) {
                 window.location.href = './register.html';
             }
-            if (localStorage.getItem('accessAllowed') === 'false') {
-                alert('Your free demo has ended. Starter and Business plans are coming soon. Please check back later.');
-                window.location.href = './index.html';
-            }
         }
         checkAuth();
     </script>
@@ -100,7 +96,7 @@
                 const data = await response.json();
                 if (!response.ok) {
                     if (data.code === 'VEHICLE_LIMIT_REACHED') {
-                        alert(`${data.message}\n\nStarter and Business plans are coming soon. Please check back later.`);
+                        alert(`${data.message}\n\nChoose a paid plan to add more vehicles.`);
                         window.location.href = './index.html#plans';
                         return;
                     }
