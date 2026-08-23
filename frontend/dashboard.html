@@ -14,10 +14,6 @@
             if (!authToken) {
                 window.location.href = './register.html';
             }
-            if (localStorage.getItem('accessAllowed') === 'false') {
-                alert('Your free demo has ended. Starter and Business plans are coming soon. Please check back later.');
-                window.location.href = './index.html';
-            }
         }
         checkAuth();
     </script>
@@ -27,6 +23,7 @@
         <button class="primary-btn" onclick="window.location.href='./profile.html'">Profile</button>
         <button class="primary-btn" onclick="window.location.href='./storage.html'">All Documents</button>
         <button class="primary-btn" onclick="window.location.href='./uploaddocument.html'">+ Upload Document</button>
+        <button class="upgrade-link" onclick="window.location.href='./payment.html'">Upgrade</button>
     </div>
     <div class="page-header">
         <h2>Dashboard Overview</h2>

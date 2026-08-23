@@ -1,12 +1,15 @@
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
 
+const emailUser = (process.env.EMAIL_USER || "your-email@gmail.com").trim();
+const emailPassword = (process.env.EMAIL_PASSWORD || "your-app-password").replace(/\s/g, '');
+
 // Email Configuration
 const emailTransporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: process.env.EMAIL_USER || "your-email@gmail.com",
-        pass: process.env.EMAIL_PASSWORD || "your-app-password"
+        user: emailUser,
+        pass: emailPassword
     }
 });
 
@@ -61,7 +64,7 @@ async function sendEmailReminder(userEmail, userName, documentInfo, daysLeft) {
 
     try {
         await emailTransporter.sendMail({
-            from: process.env.EMAIL_USER || "noreply@drivedocs.com",
+            from: emailUser,
             to: userEmail,
             subject: `⚠️ Alert: ${documentInfo.documentType.toUpperCase()} Expiring in ${daysLeft} Days`,
             html: emailContent

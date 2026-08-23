@@ -12,6 +12,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.7",
     "nodemon": "^3.1.14",
+    "razorpay": "^2.9.8",
     "twilio": "^4.10.0"
   }
 }

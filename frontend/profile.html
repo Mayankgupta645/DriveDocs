@@ -10,10 +10,6 @@
     <script>
         const authToken = localStorage.getItem('authToken');
         if (!authToken) window.location.href = './login.html';
-        if (localStorage.getItem('accessAllowed') === 'false') {
-            alert('Your free demo has ended. Choose a paid plan to continue.');
-            window.location.href = './index.html';
-        }
     </script>
 
     <div class="nav">
@@ -65,11 +61,11 @@
                         <p><strong>Phone</strong><span>${user.PhoneNumber}</span></p>
                         <p><strong>Plan</strong><span>${planName}</span></p>
                         <p><strong>Vehicle limit</strong><span>${user.vehicleLimit} vehicles</span></p>
-                        <p><strong>Trial ends</strong><span>${formatDate(user.trialEndsAt)}</span></p>
+                        <p><strong>Plan access</strong><span>${user.plan === 'free' ? 'Lifetime access' : 'Active subscription'}</span></p>
                         <p><strong>Member since</strong><span>${formatDate(user.createdAt)}</span></p>
                     </div>
                     <div class="profile-actions">
-                        <button class="primary-btn" type="button" onclick="window.location.href='./index.html#plans'">Upgrade plan</button>
+                        <button class="profile-upgrade" type="button" onclick="window.location.href='./payment.html'">Upgrade plan</button>
                     </div>
                 `;
             } catch (error) {

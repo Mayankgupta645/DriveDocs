@@ -11,6 +11,7 @@
         <h1>DriveDocs</h1>
         <div class="nav-actions">
             <h3><a href="./index.html">Home</a></h3>
+            <h3 class="upgrade-link"><a href="./payment.html">Upgrade</a></h3>
             <h3><a href="./register.html">Register</a></h3>
         </div>
     </div>
@@ -54,11 +55,6 @@
                     if (!data.userId) {
                         throw new Error('The server did not return your user ID. Please deploy the latest backend and try again.');
                     }
-                    if (data.accessAllowed === false) {
-                        alert('Your 3-day free demo has ended. Starter and Business plans are coming soon. Please check back later.');
-                        window.location.href = './index.html';
-                        return;
-                    }
                     // Store authentication token
                     localStorage.setItem('authToken', data.token || 'authenticated');
                     localStorage.setItem('userId', data.userId);
@@ -67,7 +63,7 @@
                     localStorage.setItem('vehicleLimit', data.vehicleLimit || '1');
                     localStorage.setItem('trialEndsAt', data.trialEndsAt || '');
                     localStorage.setItem('subscriptionStatus', data.subscriptionStatus || 'active');
-                    localStorage.setItem('accessAllowed', String(data.accessAllowed !== false));
+                    localStorage.setItem('accessAllowed', 'true');
                     window.location.href = './dashboard.html';
                 } else {
                     alert('Login failed: ' + data.message);

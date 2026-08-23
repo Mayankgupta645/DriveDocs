@@ -14,10 +14,6 @@
             if (!authToken) {
                 window.location.href = './register.html';
             }
-            if (localStorage.getItem('accessAllowed') === 'false') {
-                alert('Your free demo has ended. Starter and Business plans are coming soon. Please check back later.');
-                window.location.href = './index.html';
-            }
         }
         checkAuth();
     </script>
@@ -27,6 +23,7 @@
             <h3><a href="./dashboard.html">Dashboard</a></h3>
             <h3><a href="./profile.html">Profile</a></h3>
             <h3><a href="./uploaddocument.html">Upload Document</a></h3>
+            <h3 class="upgrade-link"><a href="./payment.html">Upgrade</a></h3>
         </div>
     </div>
     <div class="page-header">
