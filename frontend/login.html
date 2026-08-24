@@ -28,6 +28,8 @@
             <input type="password" id="password" name="password" required placeholder="Enter your password">
 
             <button class="primary-btn" type="submit">Login</button>
+            <p class="form-message" id="loginMessage" role="alert"></p>
+            <button class="button-link resend-button" id="resendButton" type="button" hidden>Resend verification code</button>
             <p class="small-text">Don't have an account? <a href="./register.html">Register here</a></p>
         </form>
     </div>
@@ -36,6 +38,36 @@
         const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
             ? 'http://localhost:5000'
             : 'https://drivedocs-backend.onrender.com';
+        const loginMessage = document.getElementById('loginMessage');
+        const resendButton = document.getElementById('resendButton');
+        const emailInput = document.getElementById('Email');
+
+        resendButton.addEventListener('click', async () => {
+            if (!emailInput.value.trim()) {
+                loginMessage.textContent = 'Enter your email address first.';
+                emailInput.focus();
+                return;
+            }
+            resendButton.disabled = true;
+            loginMessage.textContent = 'Sending a new verification code...';
+            try {
+                const response = await fetch(`${API_BASE}/api/user/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Email: emailInput.value })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    window.location.href = `./verify-email.html?email=${encodeURIComponent(emailInput.value.trim())}`;
+                } else {
+                    loginMessage.textContent = data.message;
+                }
+            } catch (error) {
+                loginMessage.textContent = 'Could not send the verification code. Please try again.';
+            } finally {
+                resendButton.disabled = false;
+            }
+        });
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -63,13 +95,15 @@
                     localStorage.setItem('vehicleLimit', data.vehicleLimit || '1');
                     localStorage.setItem('trialEndsAt', data.trialEndsAt || '');
                     localStorage.setItem('subscriptionStatus', data.subscriptionStatus || 'active');
+                    localStorage.setItem('emailVerified', String(data.emailVerified !== false));
                     localStorage.setItem('accessAllowed', 'true');
                     window.location.href = './dashboard.html';
                 } else {
-                    alert('Login failed: ' + data.message);
+                    loginMessage.textContent = data.message;
+                    resendButton.hidden = !data.emailVerificationRequired;
                 }
             } catch (err) {
-                alert(err.message || 'Could not connect to the server. Make sure the backend is running on port 5000.');
+                loginMessage.textContent = err.message || 'Could not connect to the server. Make sure the backend is running on port 5000.';
             }
         });
     </script>

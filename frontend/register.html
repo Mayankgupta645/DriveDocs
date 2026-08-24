@@ -96,11 +96,8 @@
                 if (response.ok) {
                     localStorage.setItem('userId', data.userId);
                     localStorage.setItem('userEmail', Email);
-                    if (plan === 'starter' || plan === 'business') {
-                        window.location.href = `./payment.html?plan=${encodeURIComponent(plan)}&email=${encodeURIComponent(Email)}`;
-                    } else {
-                        window.location.href = './login.html';
-                    }
+                    localStorage.setItem('pendingPlan', plan);
+                    window.location.href = `./verify-email.html?email=${encodeURIComponent(Email)}`;
                 } else {
                     alert('Error: ' + data.message);
                 }

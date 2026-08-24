@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>DriveDocs | All documents</title>
     <link rel="stylesheet" href="drivedocs.css">
+    <script src="verification-reminder.js" defer></script>
 </head>
 <body>
     <script>
         // Check authentication before loading protected page
         function checkAuth() {
             const authToken = localStorage.getItem('authToken');
-            if (!authToken) {
-                window.location.href = './register.html';
+            const emailVerified = localStorage.getItem('emailVerified');
+            if (!authToken || emailVerified !== 'true') {
+                localStorage.removeItem('authToken');
+                const email = localStorage.getItem('userEmail');
+                window.location.href = email ? `./verify-email.html?email=${encodeURIComponent(email)}` : './login.html';
             }
         }
         checkAuth();
