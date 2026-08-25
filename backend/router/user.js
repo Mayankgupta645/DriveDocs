@@ -1,6 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const { sendVerificationEmail, sendWelcomeEmail } = require('../services/notificationService');
+
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+function createVerificationToken() {
+    const token = crypto.randomInt(100000, 1000000).toString();
+    return {
+        token,
+        tokenHash: crypto.createHash('sha256').update(token).digest('hex'),
+        expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)
+    };
+}
 
 router.post('/register',async(req,res)=>{
     const {Username,password,PhoneNumber,Email} = req.body;
@@ -8,11 +22,16 @@ router.post('/register',async(req,res)=>{
         ? req.body.plan
         : "free";
     try {
+        const hashpassword = await bcrypt.hash(password, 10);
+        const verification = createVerificationToken();
         const user = new User({
             Username,
-            password,
+            password : hashpassword,
             PhoneNumber,
             Email,
+            emailVerified: false,
+            verificationTokenHash: verification.tokenHash,
+            verificationTokenExpiresAt: verification.expiresAt,
             plan: "free",
             pendingPlan: selectedPlan,
             trialStartedAt: undefined,
@@ -21,11 +40,15 @@ router.post('/register',async(req,res)=>{
             vehicleLimit: 1
         });
         await user.save();
+        const emailSent = await sendVerificationEmail(Email, Username, verification.token);
         res.status(201).json({
-            message: 'User created successfully',
+            message: emailSent
+                ? 'Account created. Check your email to verify your account.'
+                : 'Account created, but the verification email could not be sent. Request a new email from the login page.',
             userId: user._id,
             plan: selectedPlan,
-            trialEndsAt: null
+            trialEndsAt: null,
+            emailSent
         });
         console.log('user Created successfully');
     } catch (error) {
@@ -36,8 +59,16 @@ router.post('/register',async(req,res)=>{
 
 router.post('/login',async(req,res)=>{
     const{Email,password} = req.body;
-    const user = await User.findOne({Email,password});
+    const user = await User.findOne({Email});
     if(!user) return res.status(400).json({message:"Invalid Email or Password"});
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({message:"Invalid Email or Password"});
+    if (!user.emailVerified) {
+        return res.status(403).json({
+            message: "Please verify your email before logging in.",
+            emailVerificationRequired: true
+        });
+    }
     if (user.plan !== "free" && user.subscriptionExpiresAt && user.subscriptionExpiresAt <= new Date()) {
         user.plan = "free";
         user.vehicleLimit = 1;
@@ -58,8 +89,56 @@ router.post('/login',async(req,res)=>{
         trialEndsAt: user.trialEndsAt || null,
         subscriptionStatus: user.subscriptionStatus || "active",
         subscriptionExpiresAt: user.subscriptionExpiresAt || null,
+        emailVerified: user.emailVerified !== false,
         accessAllowed: true
     });
+});
+
+router.post('/verify-email', async (req, res) => {
+    const { code } = req.body;
+    if (!/^\d{6}$/.test(code || '')) {
+        return res.status(400).json({ message: 'Enter the six-digit verification code from your email.' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(code).digest('hex');
+    const user = await User.findOne({
+        verificationTokenHash: tokenHash,
+        verificationTokenExpiresAt: { $gt: new Date() }
+    });
+
+    if (!user) {
+        return res.status(400).json({ message: 'This verification code is invalid or has expired. Request a new one.' });
+    }
+
+    user.emailVerified = true;
+    user.verificationTokenHash = undefined;
+    user.verificationTokenExpiresAt = undefined;
+    await user.save();
+
+    if (!user.welcomeEmailSentAt) {
+        const welcomeSent = await sendWelcomeEmail(user.Email, user.Username);
+        if (welcomeSent) {
+            user.welcomeEmailSentAt = new Date();
+            await user.save();
+        }
+    }
+
+    res.status(200).json({ message: 'Email verified successfully. You can now log in.' });
+});
+
+router.post('/resend-verification', async (req, res) => {
+    const { Email } = req.body;
+    const user = await User.findOne({ Email });
+
+    if (user && !user.emailVerified) {
+        const verification = createVerificationToken();
+        user.verificationTokenHash = verification.tokenHash;
+        user.verificationTokenExpiresAt = verification.expiresAt;
+        await user.save();
+        await sendVerificationEmail(user.Email, user.Username, verification.token);
+    }
+
+    res.status(200).json({ message: 'If an unverified account exists for that email, a new verification code has been sent.' });
 });
 
 router.get('/:userId', async (req, res) => {

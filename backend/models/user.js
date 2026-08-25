@@ -19,6 +19,13 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
+    emailVerified: {
+        type: Boolean,
+        default: true
+    },
+    verificationTokenHash: String,
+    verificationTokenExpiresAt: Date,
+    welcomeEmailSentAt: Date,
     plan: {
         type: String,
         enum: ["free", "starter", "business"],

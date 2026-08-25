@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Choose a paid plan | DriveDocs</title>
     <link rel="stylesheet" href="drivedocs.css">
+    <script src="verification-reminder.js" defer></script>
+    <script>
+        const authToken = localStorage.getItem('authToken');
+        const emailVerified = localStorage.getItem('emailVerified');
+        if (!authToken || emailVerified !== 'true') {
+            localStorage.removeItem('authToken');
+            const email = localStorage.getItem('userEmail');
+            window.location.href = email ? `./verify-email.html?email=${encodeURIComponent(email)}` : './login.html';
+        }
+    </script>
 </head>
 <body>
     <div class="nav">

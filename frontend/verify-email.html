@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify your email | DriveDocs</title>
+    <link rel="stylesheet" href="drivedocs.css">
+</head>
+<body>
+    <div class="nav">
+        <h1>DriveDocs</h1>
+        <div class="nav-actions">
+            <h3><a href="./index.html">Home</a></h3>
+            <h3><a href="./login.html">Login</a></h3>
+        </div>
+    </div>
+    <div class="page-header">
+        <h2 id="pageTitle">Check your inbox</h2>
+        <p id="pageMessage">We sent a six-digit verification code to your email address. Enter it below to activate your DriveDocs account.</p>
+    </div>
+    <div class="auth-container verification-panel">
+        <label for="verificationCode">Verification code</label>
+        <input id="verificationCode" class="verification-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="Enter 6-digit code">
+        <button class="primary-btn" id="verifyButton" type="button">Verify email</button>
+        <p id="statusMessage" class="form-message">Check your inbox for the code.</p>
+        <a class="primary-btn verification-link" id="loginLink" href="./login.html" hidden>Continue to login</a>
+        <button class="button-link resend-button" id="resendButton" type="button">Resend verification code</button>
+    </div>
+
+    <script>
+        const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+            ? 'http://localhost:5000'
+            : 'https://drivedocs-backend.onrender.com';
+        const params = new URLSearchParams(window.location.search);
+        const email = params.get('email');
+        const statusMessage = document.getElementById('statusMessage');
+        const loginLink = document.getElementById('loginLink');
+        const codeInput = document.getElementById('verificationCode');
+        const verifyButton = document.getElementById('verifyButton');
+        const resendButton = document.getElementById('resendButton');
+
+        if (email) {
+            document.getElementById('pageMessage').textContent = `We sent a six-digit verification code to ${email}. Enter it below to activate your DriveDocs account.`;
+        }
+
+        async function verifyEmail() {
+            const code = codeInput.value.trim();
+            if (!/^\d{6}$/.test(code)) {
+                statusMessage.textContent = 'Enter the six-digit code from your email.';
+                return;
+            }
+
+            verifyButton.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE}/api/user/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await response.json();
+                statusMessage.textContent = data.message;
+                if (response.ok) {
+                    document.getElementById('pageTitle').textContent = 'Email verified';
+                    document.getElementById('pageMessage').textContent = 'Your DriveDocs account is ready. Sign in to continue.';
+                    loginLink.hidden = false;
+                    const pendingPlan = localStorage.getItem('pendingPlan');
+                    const registeredEmail = localStorage.getItem('userEmail') || email || '';
+                    if ((pendingPlan === 'starter' || pendingPlan === 'business') && localStorage.getItem('userId')) {
+                        loginLink.textContent = 'Continue to payment';
+                        loginLink.href = `./payment.html?plan=${encodeURIComponent(pendingPlan)}&email=${encodeURIComponent(registeredEmail)}`;
+                    }
+                }
+            } catch (error) {
+                statusMessage.textContent = 'We could not verify your email. Please try again.';
+            } finally {
+                verifyButton.disabled = false;
+            }
+        }
+
+        verifyButton.addEventListener('click', verifyEmail);
+        resendButton.addEventListener('click', async () => {
+            if (!email) {
+                statusMessage.textContent = 'Return to registration and enter your email address first.';
+                return;
+            }
+            resendButton.disabled = true;
+            statusMessage.textContent = 'Sending a new verification code...';
+            try {
+                const response = await fetch(`${API_BASE}/api/user/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Email: email })
+                });
+                const data = await response.json();
+                statusMessage.textContent = data.message;
+            } catch (error) {
+                statusMessage.textContent = 'Could not send a new code. Please try again.';
+            } finally {
+                resendButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

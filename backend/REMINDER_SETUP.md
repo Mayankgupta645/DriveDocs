@@ -34,6 +34,9 @@ Edit `.env` with your actual values:
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-app-password
 
+# Public URL where the frontend is hosted. Verification links use this value.
+FRONTEND_URL=http://localhost:5500
+
 # Twilio Configuration
 TWILIO_ACCOUNT_SID=your-account-sid
 TWILIO_AUTH_TOKEN=your-auth-token
@@ -43,6 +46,22 @@ TWILIO_WHATSAPP_NUMBER=whatsapp:+1234567890
 ---
 
 ## 🔧 Configuration Guide
+
+### Email Verification Setup
+
+Registration creates the account in an unverified state and sends a six-digit verification code. The code expires after 24 hours. Users cannot log in until they enter the code. From the login page or verification page, an unverified user can request a fresh code.
+
+1. Serve the `frontend` folder locally (for example, with VS Code Live Server on port 5500).
+2. Set `FRONTEND_URL` to that frontend URL in `backend/.env`.
+3. Configure `EMAIL_USER` and `EMAIL_PASSWORD` with a Gmail address and App Password.
+4. Start the backend with `npm start` from the `backend` folder.
+5. Register a test account, enter the six-digit code from the verification email, and press Verify email. After verification, sign in and confirm that the welcome email arrives.
+
+For production, set `FRONTEND_URL` to the deployed frontend HTTPS URL. Keep `.env` private and use HTTPS for all account communication.
+
+### Email Templates
+
+The verification email explains why verification is needed, displays the six-digit code, and shows the expiry window. The welcome email confirms activation and links to the dashboard with the first actions a new user can take. Both templates are defined in `backend/services/notificationService.js`.
 
 ### Gmail Setup (for Email Reminders)
 
