@@ -40,16 +40,22 @@ router.post('/register',async(req,res)=>{
             vehicleLimit: 1
         });
         await user.save();
-        const emailSent = await sendVerificationEmail(Email, Username, verification.token);
         res.status(201).json({
-            message: emailSent
-                ? 'Account created. Check your email to verify your account.'
-                : 'Account created, but the verification email could not be sent. Request a new email from the login page.',
+            message: 'Account created. Check your email to verify your account.',
             userId: user._id,
             plan: selectedPlan,
             trialEndsAt: null,
-            emailSent
+            emailSent: true
         });
+        sendVerificationEmail(Email, Username, verification.token)
+            .then((emailSent) => {
+                if (!emailSent) {
+                    console.warn(`Verification email could not be sent to ${Email}.`);
+                }
+            })
+            .catch((error) => {
+                console.error(`Unexpected verification email error for ${Email}:`, error);
+            });
         console.log('user Created successfully');
     } catch (error) {
         console.error('Unable to register user:', error);
