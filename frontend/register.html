@@ -97,10 +97,15 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    localStorage.setItem('authToken', data.token || 'authenticated');
                     localStorage.setItem('userId', data.userId);
                     localStorage.setItem('userEmail', Email);
+                    localStorage.setItem('plan', data.plan || plan || 'free');
+                    localStorage.setItem('vehicleLimit', data.vehicleLimit || '1');
+                    localStorage.setItem('emailVerified', 'true');
+                    localStorage.setItem('accessAllowed', 'true');
                     localStorage.setItem('pendingPlan', plan);
-                    window.location.href = `./verify-email.html?email=${encodeURIComponent(Email)}`;
+                    window.location.href = './dashboard.html';
                 } else {
                     alert('Error: ' + data.message);
                 }
