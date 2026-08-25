@@ -43,7 +43,7 @@
                 <option value="business">Business - ₹299/month, 15 vehicles</option>
             </select>
 
-            <button class="primary-btn" type="submit">Register</button>
+            <button class="primary-btn" id="registerButton" type="submit">Register</button>
             <p class="small-text">Already have an account? <a href="./login.html">Login here</a></p>
         </form>
     </div>
@@ -60,6 +60,7 @@
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const registerButton = document.getElementById('registerButton');
 
             // Get form values
             const Username = document.getElementById('username').value;
@@ -75,6 +76,8 @@
                 return;
             }
 
+            registerButton.disabled = true;
+            registerButton.textContent = 'Creating account...';
             try {
                 // Send data to backend
                 const response = await fetch(`${API_BASE}/api/user/register`, {
@@ -103,6 +106,8 @@
                 }
             } catch (error) {
                 alert('Connection error: ' + error.message);
+                registerButton.disabled = false;
+                registerButton.textContent = 'Register';
             }
         });
     </script>
