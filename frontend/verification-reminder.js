@@ -1,7 +1,9 @@
 (() => {
     const emailVerified = localStorage.getItem('emailVerified');
     const authToken = localStorage.getItem('authToken');
-    if (!authToken || emailVerified !== 'false') return;
+    // Temporarily disabled until the production email domain is verified.
+    // if (!authToken || emailVerified !== 'false') return;
+    return;
 
     const reminderKey = 'verificationReminderShownAt';
     const oneHour = 60 * 60 * 1000;

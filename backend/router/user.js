@@ -69,12 +69,13 @@ router.post('/login',async(req,res)=>{
     if(!user) return res.status(400).json({message:"Invalid Email or Password"});
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({message:"Invalid Email or Password"});
-    if (!user.emailVerified) {
-        return res.status(403).json({
-            message: "Please verify your email before logging in.",
-            emailVerificationRequired: true
-        });
-    }
+    // Temporarily disabled until the production email domain is verified.
+    // if (!user.emailVerified) {
+    //     return res.status(403).json({
+    //         message: "Please verify your email before logging in.",
+    //         emailVerificationRequired: true
+    //     });
+    // }
     if (user.plan !== "free" && user.subscriptionExpiresAt && user.subscriptionExpiresAt <= new Date()) {
         user.plan = "free";
         user.vehicleLimit = 1;
