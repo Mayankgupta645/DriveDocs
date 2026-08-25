@@ -3,12 +3,15 @@ const twilio = require("twilio");
 
 const emailUser = (process.env.EMAIL_USER || "your-email@gmail.com").trim();
 const emailPassword = (process.env.EMAIL_PASSWORD || "your-app-password").replace(/\s/g, '');
+const resendApiKey = process.env.RESEND_API_KEY?.trim();
+const emailFrom = (process.env.EMAIL_FROM || emailUser).trim();
 const emailConfigured = Boolean(
     process.env.EMAIL_USER &&
     process.env.EMAIL_PASSWORD &&
     !process.env.EMAIL_USER.includes('your-email') &&
     !process.env.EMAIL_PASSWORD.includes('your-app-password')
 );
+const resendConfigured = Boolean(resendApiKey && process.env.EMAIL_FROM);
 
 // Email Configuration
 const emailTransporter = nodemailer.createTransport({
@@ -19,15 +22,15 @@ const emailTransporter = nodemailer.createTransport({
     }
 });
 
-if (!emailConfigured) {
-    console.warn('Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the Render environment.');
-} else {
+if (resendConfigured) {
+    console.log('Resend email API is configured.');
+} else if (emailConfigured) {
     emailTransporter.verify()
         .then(() => console.log('Email transporter is ready.'))
         .catch((error) => console.error('Email transporter authentication failed:', error.message));
+} else {
+    console.warn('Email is not configured. Set RESEND_API_KEY and EMAIL_FROM for Render, or EMAIL_USER and EMAIL_PASSWORD for local Gmail.');
 }
-
-const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5500").replace(/\/$/, "");
 
 function escapeHtml(value) {
     return String(value || "")
@@ -56,6 +59,31 @@ function emailLayout(title, content) {
         </div>`;
 }
 
+async function sendEmail({ to, subject, html }) {
+    if (resendConfigured) {
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ from: emailFrom, to: [to], subject, html })
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Resend API ${response.status}: ${errorBody}`);
+        }
+        return;
+    }
+
+    if (!emailConfigured) {
+        throw new Error('No email provider is configured.');
+    }
+
+    await emailTransporter.sendMail({ from: emailFrom, to, subject, html });
+}
+
 async function sendVerificationEmail(userEmail, userName, token) {
     const safeName = escapeHtml(userName);
     const html = emailLayout("Verify your email address", `
@@ -68,8 +96,7 @@ async function sendVerificationEmail(userEmail, userName, token) {
         <p style="font-size:13px;color:#71808c">Enter this code on the DriveDocs verification screen. It expires in 24 hours. If you did not create a DriveDocs account, you can safely ignore this email.</p>`);
 
     try {
-        await emailTransporter.sendMail({
-            from: emailUser,
+        await sendEmail({
             to: userEmail,
             subject: "Verify your DriveDocs email address",
             html
@@ -94,8 +121,7 @@ async function sendWelcomeEmail(userEmail, userName) {
         </ul>`);
 
     try {
-        await emailTransporter.sendMail({
-            from: emailUser,
+        await sendEmail({
             to: userEmail,
             subject: "Welcome to DriveDocs",
             html
@@ -157,8 +183,7 @@ async function sendEmailReminder(userEmail, userName, documentInfo, daysLeft) {
     `;
 
     try {
-        await emailTransporter.sendMail({
-            from: emailUser,
+        await sendEmail({
             to: userEmail,
             subject: `⚠️ Alert: ${documentInfo.documentType.toUpperCase()} Expiring in ${daysLeft} Days`,
             html: emailContent

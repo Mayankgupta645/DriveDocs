@@ -12,12 +12,14 @@
         // Check authentication before loading protected page
         function checkAuth() {
             const authToken = localStorage.getItem('authToken');
-            const emailVerified = localStorage.getItem('emailVerified');
-            if (!authToken || emailVerified !== 'true') {
+            if (!authToken) {
                 localStorage.removeItem('authToken');
                 const email = localStorage.getItem('userEmail');
                 window.location.href = email ? `./verify-email.html?email=${encodeURIComponent(email)}` : './login.html';
             }
+            // Temporarily disabled until the production email domain is verified:
+            // const emailVerified = localStorage.getItem('emailVerified');
+            // if (!authToken || emailVerified !== 'true') { ... }
         }
         checkAuth();
     </script>
