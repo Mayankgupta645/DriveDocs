@@ -121,15 +121,26 @@ router.post('/verify-email', async (req, res) => {
     user.verificationTokenExpiresAt = undefined;
     await user.save();
 
-    if (!user.welcomeEmailSentAt) {
-        const welcomeSent = await sendWelcomeEmail(user.Email, user.Username);
-        if (welcomeSent) {
-            user.welcomeEmailSentAt = new Date();
-            await user.save();
-        }
-    }
+    res.status(200).json({
+        message: 'Email verified successfully. Opening your dashboard.',
+        userId: user._id,
+        email: user.Email,
+        plan: user.plan,
+        vehicleLimit: user.vehicleLimit,
+        emailVerified: true,
+        accessAllowed: true
+    });
 
-    res.status(200).json({ message: 'Email verified successfully. You can now log in.' });
+    if (!user.welcomeEmailSentAt) {
+        sendWelcomeEmail(user.Email, user.Username)
+            .then(async (welcomeSent) => {
+                if (welcomeSent) {
+                    user.welcomeEmailSentAt = new Date();
+                    await user.save();
+                }
+            })
+            .catch((error) => console.error(`Unexpected welcome email error for ${user.Email}:`, error));
+    }
 });
 
 router.post('/resend-verification', async (req, res) => {

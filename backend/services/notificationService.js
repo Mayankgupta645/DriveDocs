@@ -68,17 +68,16 @@ async function sendVerificationEmail(userEmail, userName, token) {
 }
 
 async function sendWelcomeEmail(userEmail, userName) {
-    const dashboardUrl = `${frontendUrl}/dashboard.html`;
     const html = emailLayout("Welcome to DriveDocs", `
         <p>Hi ${escapeHtml(userName)},</p>
         <p>Your email is verified and your DriveDocs account is ready.</p>
-        <p>You can now:</p>
+        <p>Here is how DriveDocs works:</p>
         <ul style="padding-left:20px;line-height:1.8">
-            <li>Upload your vehicle documents</li>
-            <li>Track expiry dates in one place</li>
-            <li>Receive email reminders before documents expire</li>
-        </ul>
-        <p style="margin:28px 0"><a href="${dashboardUrl}" style="display:inline-block;padding:13px 20px;background:#0c756d;color:#ffffff;text-decoration:none;font-weight:bold">Open my dashboard</a></p>`);
+            <li>Upload vehicle documents and keep them organized in one place.</li>
+            <li>Track document expiry dates from your dashboard.</li>
+            <li>Receive email and WhatsApp reminders before documents expire.</li>
+            <li>Manage your vehicles and review their compliance status anytime.</li>
+        </ul>`);
 
     try {
         await emailTransporter.sendMail({
