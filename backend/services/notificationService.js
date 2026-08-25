@@ -3,6 +3,12 @@ const twilio = require("twilio");
 
 const emailUser = (process.env.EMAIL_USER || "your-email@gmail.com").trim();
 const emailPassword = (process.env.EMAIL_PASSWORD || "your-app-password").replace(/\s/g, '');
+const emailConfigured = Boolean(
+    process.env.EMAIL_USER &&
+    process.env.EMAIL_PASSWORD &&
+    !process.env.EMAIL_USER.includes('your-email') &&
+    !process.env.EMAIL_PASSWORD.includes('your-app-password')
+);
 
 // Email Configuration
 const emailTransporter = nodemailer.createTransport({
@@ -12,6 +18,14 @@ const emailTransporter = nodemailer.createTransport({
         pass: emailPassword
     }
 });
+
+if (!emailConfigured) {
+    console.warn('Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the Render environment.');
+} else {
+    emailTransporter.verify()
+        .then(() => console.log('Email transporter is ready.'))
+        .catch((error) => console.error('Email transporter authentication failed:', error.message));
+}
 
 const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5500").replace(/\/$/, "");
 
